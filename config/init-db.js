@@ -42,6 +42,19 @@ const initDatabase = async () => {
             )
         `);
 
+        // Tabel Password Resets (untuk forgot password)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS password_resets (
+                id SERIAL PRIMARY KEY,
+                telegram_id BIGINT NOT NULL,
+                code VARCHAR(6) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                attempts INTEGER DEFAULT 0,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        `);
+
         console.log('✅ Database tables initialized successfully');
     } catch (err) {
         console.error('❌ Database init error:', err);
