@@ -21,7 +21,7 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const runningBots = new Map();
 const BOTS_DIR = path.join(__dirname, 'bots');
@@ -72,9 +72,10 @@ app.get('/api/bots', authenticateToken, async (req, res) => {
 
         const bots = result.rows.map(row => ({
             id: row.bot_name,
+            name: row.bot_name,
             template: row.template_id,
-            status: row.status,
-            running: runningBots.has(row.bot_name),
+            is_active: row.status === 'running',
+            description: '',
             created_at: row.created_at
         }));
 
@@ -86,28 +87,30 @@ app.get('/api/bots', authenticateToken, async (req, res) => {
 });
 
 // POST: Buat bot baru
-app.post('/api/bots/create', authenticateToken, async (req, res) => {
+app.post('/api/bots', authenticateToken, async (req, res) => {
     try {
-        const { id, token, templateId } = req.body;
+        const { name, token, template, description } = req.body;
         const userId = req.user.id;
 
-        if (!id || !templateId) {
+        if (!name || !template) {
             return res.status(400).json({ error: 'Nama bot dan template wajib dipilih' });
         }
+        
+        const id = name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+        
         if (!/^[a-z0-9_]+$/.test(id)) {
             return res.status(400).json({ error: 'Nama hanya boleh huruf kecil, angka, dan underscore' });
         }
 
-        const templateDir = path.join(TEMPLATES_DIR, templateId);
+        const templateDir = path.join(TEMPLATES_DIR, template);
         if (!fs.existsSync(path.join(templateDir, 'bot.py'))) {
             return res.status(404).json({ error: 'Template tidak ditemukan' });
         }
 
-        // Cek apakah nama bot sudah dipakai user ini
         const db = require('./config/database');
         const existing = await db.query(
-            'SELECT id FROM bots WHERE bot_name = $1',
-            [id]
+            'SELECT id FROM bots WHERE bot_name = $1 AND user_id = $2',
+            [id, userId]
         );
         if (existing.rows.length > 0) {
             return res.status(400).json({ error: 'Nama bot sudah digunakan' });
@@ -122,14 +125,14 @@ app.post('/api/bots/create', authenticateToken, async (req, res) => {
         fs.cpSync(templateDir, botDir, { recursive: true });
         fs.writeFileSync(
             path.join(botDir, 'config.json'),
-            JSON.stringify({ token: token || '', template: templateId }, null, 2)
+            JSON.stringify({ token: token || '', template }, null, 2)
         );
 
         // Simpan ke database
         await db.query(
-            `INSERT INTO bots (user_id, bot_name, template_id, token, status) 
-             VALUES ($1, $2, $3, $4, 'stopped')`,
-            [userId, id, templateId, token || null]
+            `INSERT INTO bots (user_id, bot_name, template_id, token, status, description) 
+             VALUES ($1, $2, $3, $4, 'stopped', $5)`,
+            [userId, id, template, token || null, description || null]
         );
 
         res.json({ success: true, message: 'Bot berhasil dibuat!' });
@@ -139,111 +142,88 @@ app.post('/api/bots/create', authenticateToken, async (req, res) => {
     }
 });
 
-// POST: Start bot
-app.post('/api/bots/:id/start', authenticateToken, async (req, res) => {
+// POST: Toggle bot status (start/stop)
+app.post('/api/bots/:id/toggle', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const { is_active } = req.body;
         const userId = req.user.id;
-        const botDir = path.join(BOTS_DIR, id);
         
-        // Verifikasi kepemilikan bot
         const db = require('./config/database');
         const bot = await db.query(
             'SELECT * FROM bots WHERE bot_name = $1 AND user_id = $2',
             [id, userId]
         );
+        
         if (bot.rows.length === 0) {
             return res.status(403).json({ error: 'Bot tidak ditemukan atau bukan milik Anda' });
         }
 
-        if (!fs.existsSync(path.join(botDir, 'bot.py'))) {
-            return res.status(404).json({ error: 'File bot.py tidak ditemukan' });
-        }
-        if (runningBots.has(id)) {
-            return res.status(400).json({ error: 'Bot sudah berjalan' });
-        }
-
-        let token = req.body.token || bot.rows[0].token || '';
-        if (!token) {
-            return res.status(400).json({ error: 'Token kosong' });
-        }
-
-        // Update token jika ada
-        if (req.body.token) {
-            await db.query('UPDATE bots SET token = $1 WHERE bot_name = $2', [req.body.token, id]);
-            fs.writeFileSync(
-                path.join(botDir, 'config.json'),
-                JSON.stringify({ token: req.body.token, template: bot.rows[0].template_id }, null, 2)
-            );
-        }
-
-        const pythonProcess = spawn('python', ['bot.py'], {
-            cwd: botDir,
-            env: {
-                ...process.env,
-                BOT_TOKEN: token,
-                BOT_ID: id,
-                PYTHONUTF8: '1',
-                PYTHONIOENCODING: 'utf-8'
+        if (is_active) {
+            // Start bot
+            const botDir = path.join(BOTS_DIR, id);
+            
+            if (!fs.existsSync(path.join(botDir, 'bot.py'))) {
+                return res.status(404).json({ error: 'File bot.py tidak ditemukan' });
             }
-        });
+            if (runningBots.has(id)) {
+                return res.status(400).json({ error: 'Bot sudah berjalan' });
+            }
 
-        runningBots.set(id, { 
-            process: pythonProcess, 
-            token, 
-            path: botDir, 
-            userId,
-            startedAt: new Date() // <-- TAMBAHKAN INI
-        });
+            let token = bot.rows[0].token || '';
+            if (!token) {
+                return res.status(400).json({ error: 'Token kosong' });
+            }
 
-        await db.query('UPDATE bots SET status = \'running\' WHERE bot_name = $1', [id]);
+            const pythonProcess = spawn('python', ['bot.py'], {
+                cwd: botDir,
+                env: {
+                    ...process.env,
+                    BOT_TOKEN: token,
+                    BOT_ID: id,
+                    PYTHONUTF8: '1',
+                    PYTHONIOENCODING: 'utf-8'
+                }
+            });
 
-        pythonProcess.stdout.on('data', (data) => {
-            io.to(`user_${userId}`).emit('bot-log', { botId: id, type: 'stdout', message: data.toString() });
-        });
+            runningBots.set(id, { 
+                process: pythonProcess, 
+                token, 
+                path: botDir, 
+                userId,
+                startedAt: new Date()
+            });
 
-        pythonProcess.stderr.on('data', (data) => {
-            io.to(`user_${userId}`).emit('bot-log', { botId: id, type: 'stderr', message: data.toString() });
-        });
+            pythonProcess.stdout.on('data', (data) => {
+                io.to(`user_${userId}`).emit('bot-log', { botId: id, type: 'stdout', message: data.toString() });
+            });
 
-        pythonProcess.on('close', async (code) => {
-            io.to(`user_${userId}`).emit('bot-stopped', { botId: id, code });
-            runningBots.delete(id);
+            pythonProcess.stderr.on('data', (data) => {
+                io.to(`user_${userId}`).emit('bot-log', { botId: id, type: 'stderr', message: data.toString() });
+            });
+
+            pythonProcess.on('close', async (code) => {
+                io.to(`user_${userId}`).emit('bot-stopped', { botId: id, code });
+                runningBots.delete(id);
+                await db.query('UPDATE bots SET status = \'stopped\' WHERE bot_name = $1', [id]);
+            });
+
+            await db.query('UPDATE bots SET status = \'running\' WHERE bot_name = $1', [id]);
+            res.json({ success: true, message: 'Bot dimulai' });
+        } else {
+            // Stop bot
+            const running = runningBots.get(id);
+            if (!running) {
+                return res.status(400).json({ error: 'Bot tidak berjalan' });
+            }
+
+            running.process.kill('SIGTERM');
             await db.query('UPDATE bots SET status = \'stopped\' WHERE bot_name = $1', [id]);
-        });
-
-        res.json({ success: true, message: 'Bot dimulai' });
-    } catch (err) {
-        console.error('Start bot error:', err);
-        res.status(500).json({ error: 'Gagal memulai bot' });
-    }
-});
-
-// POST: Stop bot
-app.post('/api/bots/:id/stop', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-        
-        const db = require('./config/database');
-        const bot = await db.query(
-            'SELECT id FROM bots WHERE bot_name = $1 AND user_id = $2',
-            [id, userId]
-        );
-        if (bot.rows.length === 0) {
-            return res.status(403).json({ error: 'Bot tidak ditemukan' });
+            res.json({ success: true, message: 'Bot dihentikan' });
         }
-
-        const running = runningBots.get(id);
-        if (!running) return res.status(400).json({ error: 'Bot tidak berjalan' });
-
-        running.process.kill('SIGTERM');
-        await db.query('UPDATE bots SET status = \'stopped\' WHERE bot_name = $1', [id]);
-        
-        res.json({ success: true, message: 'Bot dihentikan' });
     } catch (err) {
-        console.error('Stop bot error:', err);
-        res.status(500).json({ error: 'Gagal menghentikan bot' });
+        console.error('Toggle bot error:', err);
+        res.status(500).json({ error: 'Gagal mengubah status bot' });
     }
 });
 

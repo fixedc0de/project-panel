@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bot Panel</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-page">
+    <nav class="navbar">
+        <div class="nav-brand">🤖 Bot Panel</div>
+        <div class="nav-menu">
+            <span id="userEmail"></span>
+            <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Dashboard</h1>
+            <p>Kelola bot Telegram Anda</p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Bot</h3>
+                <p id="totalBots">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Bot Aktif</h3>
+                <p id="activeBots">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Pengguna</h3>
+                <p id="totalUsers">0</p>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-header">
+                <h2>Bot Saya</h2>
+                <button id="addBotBtn" class="btn btn-primary">+ Tambah Bot</button>
+            </div>
+            <div id="botsList" class="bots-grid">
+                <!-- Bot cards will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Tambah Bot -->
+    <div id="addBotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tambah Bot Baru</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="addBotForm">
+                <div class="form-group">
+                    <label for="botName">Nama Bot</label>
+                    <input type="text" id="botName" name="name" required placeholder="Contoh: Support Bot">
+                </div>
+                <div class="form-group">
+                    <label for="botToken">Bot Token</label>
+                    <input type="text" id="botToken" name="token" required placeholder="Dapatkan dari @BotFather">
+                </div>
+                <div class="form-group">
+                    <label for="botTemplate">Template</label>
+                    <select id="botTemplate" name="template">
+                        <option value="echo_bot">Echo Bot</option>
+                        <option value="calculator_bot">Calculator Bot</option>
+                        <option value="info_bot">Info Bot</option>
+                        <option value="welcome_bot">Welcome Bot</option>
+                        <option value="group_manager_bot">Group Manager Bot</option>
+                        <option value="auto_response_bot">Auto Response Bot</option>
+                        <option value="utility_tools_bot">Utility Tools Bot</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="description">Deskripsi</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Deskripsi bot..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Buat Bot</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
