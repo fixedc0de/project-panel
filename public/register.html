@@ -11,27 +11,46 @@
         <div class="auth-card">
             <div class="auth-header">
                 <h1>🤖 Bot Panel</h1>
-                <p>Buat akun baru</p>
+                <p>Buat akun baru dengan Telegram ID</p>
             </div>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="username">
+            
+            <!-- Step 1: Form Registrasi -->
+            <div id="step1">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="telegram_id">Telegram ID</label>
+                        <input type="text" id="telegram_id" name="telegram_id" required placeholder="Contoh: 123456789" pattern="\d{6,15}" title="Telegram ID harus angka 6-15 digit">
+                        <small>Masukkan ID Telegram Anda (bukan username). Cara cek ID: kirim pesan ke @userinfobot</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">Username (Opsional)</label>
+                        <input type="text" id="username" name="username" placeholder="username_telegram">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Minimal 6 karakter" minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Daftar & Dapatkan Kode Verifikasi</button>
+                </form>
+            </div>
+
+            <!-- Step 2: Form Verifikasi Kode -->
+            <div id="step2" style="display: none;">
+                <div class="verification-info">
+                    <p>✅ Kode verifikasi telah dikirim ke Telegram Anda!</p>
+                    <p><strong>Telegram ID:</strong> <span id="displayTelegramId"></span></p>
+                    <p>Silakan cek pesan dari bot official dan masukkan kode 6 digit di bawah ini:</p>
                 </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required placeholder="nama@email.com">
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Minimal 6 karakter" minlength="6">
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">Konfirmasi Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Ulangi password">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Daftar</button>
-            </form>
+                <form id="verifyForm">
+                    <div class="form-group">
+                        <label for="verify_code">Kode Verifikasi (6 digit)</label>
+                        <input type="text" id="verify_code" name="code" required placeholder="123456" pattern="\d{6}" maxlength="6" title="Masukkan 6 digit kode">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Verifikasi</button>
+                    <button type="button" id="resendBtn" class="btn btn-secondary btn-block">Kirim Ulang Kode</button>
+                </form>
+            </div>
+
             <div class="auth-footer">
                 <p>Sudah punya akun? <a href="/index.html">Masuk disini</a></p>
             </div>
