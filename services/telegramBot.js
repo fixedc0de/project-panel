@@ -1,5 +1,5 @@
 const { Telegraf } = require('telegraf');
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 class OfficialBot {
     constructor() {
