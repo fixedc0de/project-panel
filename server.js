@@ -33,7 +33,7 @@ if (!fs.existsSync(TEMPLATES_DIR)) fs.mkdirSync(TEMPLATES_DIR, { recursive: true
 // ===================== AUTH ROUTES (PUBLIC) =====================
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/forgot-password', forgotPasswordRoutes);
+app.use('/api', forgotPasswordRoutes); // Routes sudah punya prefix /forgot-password-*
 app.use('/api/monitoring', monitoringRoutes);
 // ===================== PROTECTED ROUTES =====================
 global.runningBots = runningBots;

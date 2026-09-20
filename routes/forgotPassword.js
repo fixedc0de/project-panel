@@ -13,9 +13,15 @@ const forgotLimiter = rateLimit({
     message: { error: 'Terlalu banyak percobaan. Coba lagi 15 menit lagi.' }
 });
 
-const resetLimiter = rateLimit({
+const verifyLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 10,
+    message: { error: 'Terlalu banyak percobaan verifikasi. Coba lagi nanti.' }
+});
+
+const resetLimiter = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 5,
     message: { error: 'Terlalu banyak percobaan reset. Coba lagi nanti.' }
 });
 
@@ -25,7 +31,7 @@ function generateCode() {
 }
 
 // ===================== STEP 1: REQUEST RESET CODE =====================
-router.post('/request-code', forgotLimiter, async (req, res) => {
+router.post('/forgot-password-request', forgotLimiter, async (req, res) => {
     try {
         const { telegram_id } = req.body;
 
@@ -103,22 +109,13 @@ Jika Anda tidak merasa meminta reset password, abaikan pesan ini dan segera gant
     }
 });
 
-// ===================== STEP 2: VERIFY CODE & RESET PASSWORD =====================
-router.post('/reset-password', resetLimiter, async (req, res) => {
+// ===================== STEP 2: VERIFY CODE =====================
+router.post('/forgot-password-verify', verifyLimiter, async (req, res) => {
     try {
-        const { telegram_id, code, new_password, confirm_password } = req.body;
+        const { telegram_id, code } = req.body;
 
-        // Validasi input
-        if (!telegram_id || !code || !new_password || !confirm_password) {
-            return res.status(400).json({ error: 'Semua field wajib diisi' });
-        }
-
-        if (new_password.length < 6) {
-            return res.status(400).json({ error: 'Password baru minimal 6 karakter' });
-        }
-
-        if (new_password !== confirm_password) {
-            return res.status(400).json({ error: 'Konfirmasi password tidak cocok' });
+        if (!telegram_id || !code) {
+            return res.status(400).json({ error: 'Telegram ID dan kode wajib diisi' });
         }
 
         // Cari kode reset yang valid
@@ -158,11 +155,29 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Kode verifikasi tidak valid' });
         }
 
-        const resetRecord = result.rows[0];
+        res.json({ 
+            success: true, 
+            message: 'Kode valid! Silakan masukkan password baru.' 
+        });
 
-        // Cek jumlah percobaan
-        if (resetRecord.attempts >= 5) {
-            return res.status(400).json({ error: 'Terlalu banyak percobaan. Silakan minta kode baru.' });
+    } catch (err) {
+        console.error('Verify code error:', err);
+        res.status(500).json({ error: 'Terjadi kesalahan server' });
+    }
+});
+
+// ===================== STEP 3: RESET PASSWORD =====================
+router.post('/forgot-password-reset', resetLimiter, async (req, res) => {
+    try {
+        const { telegram_id, new_password } = req.body;
+
+        // Validasi input
+        if (!telegram_id || !new_password) {
+            return res.status(400).json({ error: 'Telegram ID dan password baru wajib diisi' });
+        }
+
+        if (new_password.length < 6) {
+            return res.status(400).json({ error: 'Password baru minimal 6 karakter' });
         }
 
         // Hash password baru
@@ -174,10 +189,10 @@ router.post('/reset-password', resetLimiter, async (req, res) => {
             [newPasswordHash, telegram_id]
         );
 
-        // Tandai kode sebagai used
+        // Invalidate semua kode reset untuk user ini
         await db.query(
-            'UPDATE password_resets SET used = TRUE WHERE id = $1',
-            [resetRecord.id]
+            'UPDATE password_resets SET used = TRUE WHERE telegram_id = $1 AND used = FALSE',
+            [telegram_id]
         );
 
         // Kirim notifikasi sukses
