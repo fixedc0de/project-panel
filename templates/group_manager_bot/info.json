@@ -1,0 +1,8 @@
+{
+    "name": "Group Manager Bot",
+    "description": "Bot untuk manajemen grup Telegram dengan fitur welcome message, moderation (warn/kick/ban/mute), custom commands, dan anti-link detector. Setiap bot memiliki database SQLite sendiri.",
+    "icon": "🛡️",
+    "commands": ["/start", "/help", "/setwelcome", "/warn", "/warnings", "/kick", "/ban", "/mute", "/unmute", "/addcmd", "/stats"],
+    "category": "Moderation",
+    "version": "1.0.0"
+}
