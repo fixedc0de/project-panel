@@ -1,0 +1,8 @@
+{
+    "name": "Auto Response Bot",
+    "description": "Bot auto-response berbasis keyword dan regex pattern. Cocok untuk FAQ otomatis.",
+    "icon": "💬",
+    "commands": ["/start", "/help", "/addresponse", "/delresponse", "/listresponse", "/stats"],
+    "category": "Utility",
+    "version": "1.0.0"
+}

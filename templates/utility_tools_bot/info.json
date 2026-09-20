@@ -1,0 +1,8 @@
+{
+    "name": "Utility Tools Bot",
+    "description": "Bot serbaguna dengan kalkulator, quotes, reminder, notes, converter unit, dan random tools.",
+    "icon": "🛠️",
+    "commands": ["/start", "/help", "/calc", "/quote", "/remind", "/note", "/random", "/coin", "/dice", "/convert"],
+    "category": "Utilities",
+    "version": "1.0.0"
+}
