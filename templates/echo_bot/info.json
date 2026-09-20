@@ -1,0 +1,6 @@
+{
+    "name": "Echo Bot",
+    "description": "Membalas setiap pesan dengan teks yang sama",
+    "icon": "🔁",
+    "commands": ["/start", "/help"]
+}

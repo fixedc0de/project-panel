@@ -1,0 +1,6 @@
+{
+    "name": "Calculator Bot",
+    "description": "Kalkulator matematika sederhana via chat",
+    "icon": "🧮",
+    "commands": ["/start", "/calc"]
+}

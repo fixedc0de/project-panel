@@ -1,0 +1,6 @@
+{
+    "name": "Info Bot",
+    "description": "Menampilkan informasi lengkap tentang user",
+    "icon": "📋",
+    "commands": ["/start", "/info", "/id"]
+}
