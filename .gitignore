@@ -1,3 +1,4 @@
+```gitignore
 # Dependencies
 node_modules/
 
@@ -14,16 +15,43 @@ node_modules/
 .vscode/
 .idea/
 
+# Build artifacts
+dist/
+build/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Build directories
-dist/
-build/
-target/
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+.DS_Store
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
 # Compressed files
 *.zip
@@ -48,21 +76,4 @@ target/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# IDE specific
-*.swp
-*.swo
-
-# MyPy cache
-.mypy_cache/
-# PyTest cache
-.pytest_cache/
+```
