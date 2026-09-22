@@ -66,14 +66,14 @@ app.get('/api/bots', authenticateToken, async (req, res) => {
     try {
         const db = require('./config/database');
         const result = await db.query(
-            'SELECT id, bot_name, template_id, status, created_at, description, is_active FROM bots WHERE user_id = $1',
+            'SELECT id, bot_name as name, template_id as template, status, created_at, description, is_active FROM bots WHERE user_id = $1',
             [req.user.id]
         );
 
         const bots = result.rows.map(row => ({
             id: row.id,
-            name: row.bot_name,
-            template: row.template_id,
+            name: row.name,
+            template: row.template,
             is_active: row.is_active || row.status === 'running',
             description: row.description || '',
             created_at: row.created_at
@@ -130,9 +130,9 @@ app.post('/api/bots', authenticateToken, async (req, res) => {
 
         // Simpan ke database
         await db.query(
-            `INSERT INTO bots (user_id, bot_name, template_id, token, status, bot_username, description) 
-             VALUES ($1, $2, $3, $4, 'stopped', $5, $6)`,
-            [userId, id, template, token || null, null, description || null]
+            `INSERT INTO bots (user_id, bot_name, template_id, token, status, bot_username, description, is_active) 
+             VALUES ($1, $2, $3, $4, 'stopped', $5, $6, FALSE)`,
+            [userId, id, template, token || null, description || null]
         );
 
         res.json({ success: true, message: 'Bot berhasil dibuat!' });
@@ -151,7 +151,7 @@ app.post('/api/bots/:id/toggle', authenticateToken, async (req, res) => {
         
         const db = require('./config/database');
         const bot = await db.query(
-            'SELECT * FROM bots WHERE bot_name = $1 AND user_id = $2',
+            'SELECT bot_name, token FROM bots WHERE bot_name = $1 AND user_id = $2',
             [id, userId]
         );
         
@@ -172,7 +172,7 @@ app.post('/api/bots/:id/toggle', authenticateToken, async (req, res) => {
 
             let token = bot.rows[0].token || '';
             if (!token) {
-                return res.status(400).json({ error: 'Token kosong' });
+                return res.status(400).json({ error: 'Token kosong. Silakan edit bot dan masukkan token.' });
             }
 
             const pythonProcess = spawn('python', ['bot.py'], {
@@ -208,7 +208,7 @@ app.post('/api/bots/:id/toggle', authenticateToken, async (req, res) => {
                 await db.query('UPDATE bots SET status = \'stopped\' WHERE bot_name = $1', [id]);
             });
 
-            await db.query('UPDATE bots SET status = \'running\' WHERE bot_name = $1', [id]);
+            await db.query('UPDATE bots SET status = \'running\', is_active = TRUE WHERE bot_name = $1', [id]);
             res.json({ success: true, message: 'Bot dimulai' });
         } else {
             // Stop bot
@@ -218,7 +218,7 @@ app.post('/api/bots/:id/toggle', authenticateToken, async (req, res) => {
             }
 
             running.process.kill('SIGTERM');
-            await db.query('UPDATE bots SET status = \'stopped\' WHERE bot_name = $1', [id]);
+            await db.query('UPDATE bots SET status = \'stopped\', is_active = FALSE WHERE bot_name = $1', [id]);
             res.json({ success: true, message: 'Bot dihentikan' });
         }
     } catch (err) {
@@ -235,7 +235,7 @@ app.delete('/api/bots/:id', authenticateToken, async (req, res) => {
         
         const db = require('./config/database');
         const bot = await db.query(
-            'SELECT id, bot_name FROM bots WHERE id = $1 AND user_id = $2',
+            'SELECT bot_name FROM bots WHERE id = $1 AND user_id = $2',
             [id, userId]
         );
         if (bot.rows.length === 0) {

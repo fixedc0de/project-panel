@@ -1,8 +1,3 @@
-// Forgot Password functions
-const API_URL = '';
-
-let forgotTelegramId = null;
-
 // Step 1: Request reset code
 const forgotForm = document.getElementById('forgotForm');
 if (forgotForm) {
@@ -11,7 +6,7 @@ if (forgotForm) {
         const telegram_id = document.getElementById('telegram_id').value;
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/forgot-password-request`, {
+            const response = await fetch(`/api/forgot-password-request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegram_id })
@@ -19,19 +14,16 @@ if (forgotForm) {
 
             const data = await response.json();
 
-            if (response.ok) {
-                forgotTelegramId = telegram_id;
+            if (response.ok || data.success) {
                 localStorage.setItem('forgot_telegram_id', telegram_id);
-                
-                // Show step 2
                 document.getElementById('step1').style.display = 'none';
                 document.getElementById('step2').style.display = 'block';
-                
                 showMessage('message', data.message || 'Kode verifikasi telah dikirim ke Telegram Anda!', 'success');
             } else {
                 showMessage('message', data.error || 'Gagal mengirim kode reset', 'error');
             }
         } catch (error) {
+            console.error('Forgot password request error:', error);
             showMessage('message', 'Terjadi kesalahan. Periksa koneksi Anda.', 'error');
         }
     });
@@ -51,7 +43,7 @@ if (verifyCodeForm) {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/forgot-password-verify`, {
+            const response = await fetch(`/api/forgot-password-verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegram_id, code })
@@ -59,16 +51,15 @@ if (verifyCodeForm) {
 
             const data = await response.json();
 
-            if (response.ok) {
-                // Show step 3
+            if (response.ok || data.success) {
                 document.getElementById('step2').style.display = 'none';
                 document.getElementById('step3').style.display = 'block';
-                
                 showMessage('message', 'Kode valid! Silakan masukkan password baru.', 'success');
             } else {
                 showMessage('message', data.error || 'Kode verifikasi tidak valid', 'error');
             }
         } catch (error) {
+            console.error('Verify code error:', error);
             showMessage('message', 'Terjadi kesalahan. Periksa koneksi Anda.', 'error');
         }
     });
@@ -99,7 +90,7 @@ if (resetPasswordForm) {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/auth/forgot-password-reset`, {
+            const response = await fetch(`/api/forgot-password-reset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ telegram_id, new_password })
@@ -107,7 +98,7 @@ if (resetPasswordForm) {
 
             const data = await response.json();
 
-            if (response.ok) {
+            if (response.ok || data.success) {
                 localStorage.removeItem('forgot_telegram_id');
                 showMessage('message', data.message || 'Password berhasil diubah! Silakan login.', 'success');
                 setTimeout(() => {
@@ -117,12 +108,13 @@ if (resetPasswordForm) {
                 showMessage('message', data.error || 'Gagal mengubah password', 'error');
             }
         } catch (error) {
+            console.error('Reset password error:', error);
             showMessage('message', 'Terjadi kesalahan. Periksa koneksi Anda.', 'error');
         }
     });
 }
 
-// Show message
+// Show message helper
 function showMessage(elementId, message, type) {
     const messageEl = document.getElementById(elementId);
     messageEl.textContent = message;
