@@ -66,16 +66,16 @@ app.get('/api/bots', authenticateToken, async (req, res) => {
     try {
         const db = require('./config/database');
         const result = await db.query(
-            'SELECT bot_name, template_id, status, created_at FROM bots WHERE user_id = $1',
+            'SELECT id, bot_name, template_id, status, created_at, description, is_active FROM bots WHERE user_id = $1',
             [req.user.id]
         );
 
         const bots = result.rows.map(row => ({
-            id: row.bot_name,
+            id: row.id,
             name: row.bot_name,
             template: row.template_id,
-            is_active: row.status === 'running',
-            description: '',
+            is_active: row.is_active || row.status === 'running',
+            description: row.description || '',
             created_at: row.created_at
         }));
 
@@ -130,9 +130,9 @@ app.post('/api/bots', authenticateToken, async (req, res) => {
 
         // Simpan ke database
         await db.query(
-            `INSERT INTO bots (user_id, bot_name, template_id, token, status, description) 
-             VALUES ($1, $2, $3, $4, 'stopped', $5)`,
-            [userId, id, template, token || null, description || null]
+            `INSERT INTO bots (user_id, bot_name, template_id, token, status, bot_username, description) 
+             VALUES ($1, $2, $3, $4, 'stopped', $5, $6)`,
+            [userId, id, template, token || null, null, description || null]
         );
 
         res.json({ success: true, message: 'Bot berhasil dibuat!' });
@@ -235,24 +235,26 @@ app.delete('/api/bots/:id', authenticateToken, async (req, res) => {
         
         const db = require('./config/database');
         const bot = await db.query(
-            'SELECT id FROM bots WHERE bot_name = $1 AND user_id = $2',
+            'SELECT id, bot_name FROM bots WHERE id = $1 AND user_id = $2',
             [id, userId]
         );
         if (bot.rows.length === 0) {
             return res.status(403).json({ error: 'Bot tidak ditemukan' });
         }
 
-        if (runningBots.has(id)) {
-            runningBots.get(id).process.kill('SIGTERM');
-            runningBots.delete(id);
+        const botName = bot.rows[0].bot_name;
+
+        if (runningBots.has(botName)) {
+            runningBots.get(botName).process.kill('SIGTERM');
+            runningBots.delete(botName);
         }
 
-        const botDir = path.join(BOTS_DIR, id);
+        const botDir = path.join(BOTS_DIR, botName);
         if (fs.existsSync(botDir)) {
             fs.rmSync(botDir, { recursive: true, force: true });
         }
 
-        await db.query('DELETE FROM bots WHERE bot_name = $1', [id]);
+        await db.query('DELETE FROM bots WHERE id = $1', [id]);
         
         res.json({ success: true });
     } catch (err) {
