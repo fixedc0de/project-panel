@@ -129,9 +129,10 @@ app.post('/api/bots', authenticateToken, async (req, res) => {
         );
 
         // Simpan ke database
+        // Note: bot_username akan diupdate setelah bot distart dan terhubung
         await db.query(
             `INSERT INTO bots (user_id, bot_name, template_id, token, status, bot_username, description, is_active) 
-             VALUES ($1, $2, $3, $4, 'stopped', $5, $6, FALSE)`,
+             VALUES ($1, $2, $3, $4, 'stopped', NULL, $5, FALSE)`,
             [userId, id, template, token || null, description || null]
         );
 
