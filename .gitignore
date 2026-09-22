@@ -40,6 +40,11 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
 # Compressed files
 *.zip
 *.gz
@@ -59,8 +64,4 @@ __pycache__/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```
