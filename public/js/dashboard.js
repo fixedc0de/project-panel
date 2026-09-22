@@ -25,7 +25,7 @@ async function loadDashboard() {
     const token = localStorage.getItem('token');
 
     try {
-        const response = await fetch(`${API_URL}/api/bots`, {
+        const response = await fetch(`/api/bots`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -37,6 +37,9 @@ async function loadDashboard() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/index.html';
+        } else {
+            const errorData = await response.json();
+            console.error('Failed to load bots:', errorData);
         }
     } catch (error) {
         console.error('Error loading dashboard:', error);
@@ -86,7 +89,7 @@ async function toggleBot(botId, isActive) {
     const token = localStorage.getItem('token');
     
     try {
-        const response = await fetch(`${API_URL}/api/bots/${botId}/toggle`, {
+        const response = await fetch(`/api/bots/${botId}/toggle`, {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${token}`,
@@ -98,10 +101,12 @@ async function toggleBot(botId, isActive) {
         if (response.ok) {
             loadDashboard();
         } else {
-            alert('Gagal mengubah status bot');
+            const data = await response.json();
+            alert(data.error || 'Gagal mengubah status bot');
         }
     } catch (error) {
-        alert('Terjadi kesalahan');
+        console.error('Toggle bot error:', error);
+        alert('Terjadi kesalahan saat mengubah status bot');
     }
 }
 
@@ -117,7 +122,7 @@ async function deleteBot(botId) {
     const token = localStorage.getItem('token');
     
     try {
-        const response = await fetch(`${API_URL}/api/bots/${botId}`, {
+        const response = await fetch(`/api/bots/${botId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -125,10 +130,12 @@ async function deleteBot(botId) {
         if (response.ok) {
             loadDashboard();
         } else {
-            alert('Gagal menghapus bot');
+            const data = await response.json();
+            alert(data.error || 'Gagal menghapus bot');
         }
     } catch (error) {
-        alert('Terjadi kesalahan');
+        console.error('Delete bot error:', error);
+        alert('Terjadi kesalahan saat menghapus bot');
     }
 }
 
@@ -171,7 +178,7 @@ if (addBotForm) {
         };
 
         try {
-            const response = await fetch(`${API_URL}/api/bots`, {
+            const response = await fetch(`/api/bots`, {
                 method: 'POST',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -189,7 +196,8 @@ if (addBotForm) {
                 alert(data.error || 'Gagal membuat bot');
             }
         } catch (error) {
-            alert('Terjadi kesalahan');
+            console.error('Create bot error:', error);
+            alert('Terjadi kesalahan saat membuat bot');
         }
     });
 }

@@ -34,13 +34,27 @@ const initDatabase = async () => {
             CREATE TABLE IF NOT EXISTS bots (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-                bot_name VARCHAR(100) UNIQUE NOT NULL,
+                bot_name VARCHAR(100) NOT NULL,
                 template_id VARCHAR(50) NOT NULL,
-                token TEXT,
+                token TEXT UNIQUE NOT NULL,
+                bot_username VARCHAR(100),
+                description TEXT,
                 status VARCHAR(20) DEFAULT 'stopped',
-                created_at TIMESTAMP DEFAULT NOW()
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW(),
+                last_active TIMESTAMP DEFAULT NOW()
             )
         `);
+
+        // Migration: Add missing columns if table already exists
+        try {
+            await db.query(`ALTER TABLE bots ADD COLUMN IF NOT EXISTS bot_username VARCHAR(100)`);
+            await db.query(`ALTER TABLE bots ADD COLUMN IF NOT EXISTS description TEXT`);
+            await db.query(`ALTER TABLE bots ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE`);
+            await db.query(`ALTER TABLE bots ADD COLUMN IF NOT EXISTS last_active TIMESTAMP DEFAULT NOW()`);
+        } catch (migrationErr) {
+            console.log('⚠️ Migration check completed.');
+        }
 
         // Tabel Password Resets (untuk forgot password)
         await db.query(`

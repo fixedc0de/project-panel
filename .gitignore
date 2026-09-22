@@ -1,57 +1,44 @@
-```gitignore
+```
 # Dependencies
 node_modules/
 
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment
+# Environment variables
 .env
 .env.local
 *.env.*
 
-# Editors
+# Logs
+*.log
+
+# Build artifacts from node modules
+node_modules/**/prebuilds/
+node_modules/**/dist/
+node_modules/**/build/
+node_modules/.package-lock.json
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+coverage/
+htmlcov/
+*.coverage
+
+# IDE files
 .vscode/
 .idea/
 
-# Build artifacts
-dist/
-build/
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-
-# Python
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/modules/
-.DS_Store
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
 
 # Compressed files
 *.zip
